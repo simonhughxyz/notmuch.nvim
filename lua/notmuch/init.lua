@@ -134,7 +134,7 @@ nm.search_terms = function(search)
   -- Async notmuch search to make the UX non blocking
   run_notmuch_search(search, buf, function()
     -- Completion logic
-    if vim.fn.getline(1) ~= '' then num_threads_found = vim.fn.line('$') end
+    if vim.fn.getline(2) ~= '' then num_threads_found = vim.fn.line('$') - 1 end
     print('Found ' .. num_threads_found .. ' threads')
   end)
 
