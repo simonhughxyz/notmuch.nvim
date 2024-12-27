@@ -77,6 +77,43 @@ nm.count = function(search)
   return count_messages
 end
 
+local function run_notmuch_search(search, buf, on_complete)
+  local stdout = vim.loop.new_pipe(false)
+  local stderr = vim.loop.new_pipe(false)
+
+  local handle
+  handle = vim.loop.spawn("notmuch", {
+    args = {"search", search},
+    stdio = {nil, stdout, stderr}
+  }, vim.schedule_wrap(function()
+    -- Close the pipes and handle
+    stdout:close()
+    stderr:close()
+    handle:close()
+
+    -- Call the completion callback
+    on_complete()
+  end))
+
+  -- Read data from stdout and write it to the buffer
+  vim.loop.read_start(stdout, vim.schedule_wrap(function(_, data)
+    if data then
+      local lines = vim.split(data, '\n')
+      lines[#lines] = nil -- Remove trailing empty element
+      vim.bo[buf].modifiable = true
+      vim.api.nvim_buf_set_lines(buf, 1, -1, false, lines)
+      vim.bo[buf].modifiable = false
+    end
+  end))
+
+  -- Log errors from stderr
+  vim.loop.read_start(stderr, vim.schedule_wrap(function(err, _)
+    if err then
+      vim.notify("ERROR: " .. err)
+    end
+  end))
+end
+
 nm.search_terms = function(search)
   local num_threads_found = 0
   if search == '' then
@@ -93,13 +130,21 @@ nm.search_terms = function(search)
   local buf = v.nvim_create_buf(true, true)
   v.nvim_buf_set_name(buf, search)
   v.nvim_win_set_buf(0, buf)
-  v.nvim_command("silent 0read! notmuch search " .. search)
+
+  -- Async notmuch search to make the UX non blocking
+  run_notmuch_search(search, buf, function()
+    -- Completion logic
+    if vim.fn.getline(1) ~= '' then num_threads_found = vim.fn.line('$') end
+    print('Found ' .. num_threads_found .. ' threads')
+    vim.bo.modifiable = true
+    v.nvim_buf_set_lines(buf, 0, 1, false, { "Here is a hint" })
+    vim.bo.modifiable = false
+  end)
+
   v.nvim_win_set_cursor(0, { 1, 0 })
   v.nvim_buf_set_lines(buf, -2, -1, true, {})
   vim.bo.filetype = "notmuch-threads"
   vim.bo.modifiable = false
-  if vim.fn.getline(1) ~= '' then num_threads_found = vim.fn.line('$') end
-  print('Found ' .. num_threads_found .. ' threads')
 end
 
 nm.show_thread = function(s)
