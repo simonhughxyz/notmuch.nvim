@@ -101,7 +101,7 @@ local function run_notmuch_search(search, buf, on_complete)
       local lines = vim.split(data, '\n')
       lines[#lines] = nil -- Remove trailing empty element
       vim.bo[buf].modifiable = true
-      vim.api.nvim_buf_set_lines(buf, 1, -1, false, lines)
+      vim.api.nvim_buf_set_lines(buf, -1, -1, false, lines)
       vim.bo[buf].modifiable = false
     end
   end))
@@ -136,9 +136,6 @@ nm.search_terms = function(search)
     -- Completion logic
     if vim.fn.getline(1) ~= '' then num_threads_found = vim.fn.line('$') end
     print('Found ' .. num_threads_found .. ' threads')
-    vim.bo.modifiable = true
-    v.nvim_buf_set_lines(buf, 0, 1, false, { "Here is a hint" })
-    vim.bo.modifiable = false
   end)
 
   v.nvim_win_set_cursor(0, { 1, 0 })
