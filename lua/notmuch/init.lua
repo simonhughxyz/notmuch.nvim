@@ -139,6 +139,9 @@ nm.search_terms = function(search)
   v.nvim_buf_set_name(buf, search)
   v.nvim_win_set_buf(0, buf)
 
+  local hint_text = "Hints: <Enter>: Open thread | q: Close | a: Archive | A: Archive and Read | +: Add tag | -: Remove tag | =: Toggle tag"
+  v.nvim_buf_set_lines(buf, 0, 2, false, { hint_text , "" })
+
   -- Async notmuch search to make the UX non blocking
   run_notmuch_search(search, buf, function()
     -- Completion logic
@@ -152,14 +155,35 @@ nm.search_terms = function(search)
   vim.bo.modifiable = false
 end
 
+--- Opens a thread in the mail view with all messages in the thread
+--
+-- This function fetches all the messages in the input thread's ID from the
+-- notmuch database and displays them in the mail.vim view.
+--
+-- @param s string: The string to fetch the threadid from (individual line, or
+--                  thread full form)
+-- @return true|nil: `true` for successful display, nil for any error
+--
+-- @usage
+-- nm.show_thread("thread:00000000000003aa")
+-- nm.show_thread(v.nvim_get_current_line())
 nm.show_thread = function(s)
+  -- Fetch the threadid from the input `s` or from current line
   local threadid = ''
   if s == nil then
+    -- fetch from the current line since no input passed
     local line = v.nvim_get_current_line()
+    if line:find("Hints:") == 1 then
+      -- Skip if selected the Hints line
+      print("Cannot open Hints :-)")
+      return nil
+    end
     threadid = string.match(line, "[0-9a-z]+", 7)
   else
     threadid = string.match(s, "[0-9a-z]+", 7)
   end
+
+  -- Open buffer if already exists, otherwise create new `buf`
   local bufno = vim.fn.bufnr('thread:' .. threadid)
   if bufno ~= -1 then
     v.nvim_win_set_buf(0, bufno)
@@ -168,9 +192,12 @@ nm.show_thread = function(s)
   local buf = v.nvim_create_buf(true, true)
   v.nvim_buf_set_name(buf, "thread:" .. threadid)
   v.nvim_win_set_buf(0, buf)
-  --v.nvim_command("silent 0read! notmuch show --exclude=false thread:" .. threadid .. " | sed 's///g'")
   v.nvim_command("silent 0read! notmuch show --exclude=false thread:" .. threadid .. " | col")
+
+  -- Clean up the messages in the thread to display in UI friendly way
   process_msgs_in_thread(buf)
+
+  -- Place cursor at head of buffer and prepare display and disable modification
   v.nvim_win_set_cursor(0, { 1, 0})
   v.nvim_buf_set_lines(buf, -3, -1, true, {})
   vim.bo.filetype="mail"
