@@ -56,16 +56,33 @@ local function process_msgs_in_thread(buf)
   end
 end
 
+--- Opens the landing/homepage for Notmuch: the `hello` page
+--
+-- This function opens the main landing page for `notmuch.nvim`. It essentially
+-- consists of all the tags in the `notmuch` database for the user to select or
+-- count. They can also search from here etc.
+--
+-- @usage
+-- nm.show_all_tags() -- opens the `hello` page
 local function show_all_tags()
   local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 0)
+
+  -- Create dedicated buffer. Content is fetched using `db.get_all_tags()`
   local buf = v.nvim_create_buf(true, true)
   v.nvim_buf_set_name(buf, "Tags")
   v.nvim_win_set_buf(0, buf)
   v.nvim_buf_set_lines(buf, 0, 0, true, db.get_all_tags())
-  v.nvim_win_set_cursor(0, { 1, 0})
+
+  -- Insert help hints at the top of the buffer
+  local hint_text = "Hints: <Enter>: Show threads | q: Close | r: Refresh | %: Refresh maildir | c: Count messages"
+  v.nvim_buf_set_lines(buf, 0, 0, false, { hint_text , "" })
+
+  -- Clean up the buffer and set the cursor to the head
+  v.nvim_win_set_cursor(0, { 3, 0})
   v.nvim_buf_set_lines(buf, -2, -1, true, {})
   vim.bo.filetype = "notmuch-hello"
   vim.bo.modifiable = false
+
   db.close()
 end
 
@@ -139,7 +156,7 @@ nm.search_terms = function(search)
   v.nvim_buf_set_name(buf, search)
   v.nvim_win_set_buf(0, buf)
 
-  local hint_text = "Hints: <Enter>: Open thread | q: Close | a: Archive | A: Archive and Read | +: Add tag | -: Remove tag | =: Toggle tag"
+  local hint_text = "Hints: <Enter>: Open thread | q: Close | r: Refresh | %: Sync maildir | a: Archive | A: Archive and Read | +: Add tag | -: Remove tag | =: Toggle tag"
   v.nvim_buf_set_lines(buf, 0, 2, false, { hint_text , "" })
 
   -- Async notmuch search to make the UX non blocking
@@ -197,9 +214,13 @@ nm.show_thread = function(s)
   -- Clean up the messages in the thread to display in UI friendly way
   process_msgs_in_thread(buf)
 
+  -- Insert hint message at the top of the buffer
+  local hint_text = "Hints: <Enter>: Toggle fold message | <Tab>: Next message | <S-Tab>: Prev message | q: Close | a: See attachment parts"
+  v.nvim_buf_set_lines(buf, 0, 0, false, { hint_text , "" })
+
   -- Place cursor at head of buffer and prepare display and disable modification
-  v.nvim_win_set_cursor(0, { 1, 0})
   v.nvim_buf_set_lines(buf, -3, -1, true, {})
+  v.nvim_win_set_cursor(0, { 1, 0})
   vim.bo.filetype="mail"
   vim.bo.modifiable = false
 end
