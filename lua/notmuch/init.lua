@@ -95,11 +95,19 @@ local function run_notmuch_search(search, buf, on_complete)
     on_complete()
   end))
 
+  -- Helper variable for maintaining incomplete lines between reads
+  local partial_data = ""
+
   -- Read data from stdout and write it to the buffer
   vim.loop.read_start(stdout, vim.schedule_wrap(function(_, data)
     if data then
-      local lines = vim.split(data, '\n')
-      lines[#lines] = nil -- Remove trailing empty element
+      -- Combine earlier incomplete chunk with newest read
+      partial_data = partial_data .. data
+      local lines = vim.split(partial_data, '\n')
+      -- collect incomplete line at the tail of lines
+      partial_data = table.remove(lines)
+
+      -- Paste lines into the tail of `buf`
       vim.bo[buf].modifiable = true
       vim.api.nvim_buf_set_lines(buf, -1, -1, false, lines)
       vim.bo[buf].modifiable = false
