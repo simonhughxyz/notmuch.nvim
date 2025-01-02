@@ -1,17 +1,31 @@
 local nm = {}
 local v = vim.api
 
-local default_cmd = 'mbsync -a'
-if vim.g.NotmuchMaildirSyncCmd == nil then vim.g.NotmuchMaildirSyncCmd = default_cmd end
+-- Setup `notmuch.nvim`
+--
+-- This function initializes the notmuch.nvim plugin. It defines the entry point
+-- command(s) and sets configuration options based on user passed arguments or
+-- default values
+--
+-- @param opts table: Table of options as passed by the user with their config
+--                    setup
+--
+-- @usage
+-- {
+--   config = function()
+--     opts = { ... } -- options go here
+--     require('notmuch').setup(opts)
+--   end
+-- }
+nm.setup = function(opts)
+  -- Set up the main entry point command :Notmuch
+  vim.cmd[[command Notmuch :lua require('notmuch').notmuch_hello()]]
 
-local default_open_cmd = 'xdg-open'
-if vim.fn.has('mac') == 1 then default_open_cmd = 'open' end
-if vim.fn.has('wsl') == 1 then default_open_cmd = 'wsl-open' end
-if vim.g.NotmuchOpenCmd == nil then vim.g.NotmuchOpenCmd = default_open_cmd end
-
-
-local db_path = os.getenv("HOME") .. '/Mail'
-if vim.g.NotmuchDBPath == nil then vim.g.NotmuchDBPath = db_path end
+  -- Configure global variables based on user arguments OR default values
+  vim.g.NotmuchDBPath = opts.notmuch_db_path or os.getenv("HOME") .. '/Mail'
+  vim.g.NotmuchMaildirSyncCmd = opts.maildir_sync_cmd or 'mbsync -a'
+  vim.g.NotmuchOpenCmd = opts.open_cmd or 'xdg-open'
+end
 
 local function indent_depth(buf, lineno, depth)
   local line = vim.fn.getline(lineno)

@@ -88,17 +88,34 @@ Here are the core commands within Notmuch.nvim:
 
 ## Configuration Options
 
-<!-- TODO: Convert this to a table -->
-
 You can configure several global options to tailor the plugin's behavior:
 
-- `g:NotmuchDBPath` (default `'$HOME/Mail'`): Path to your Notmuch database.
-  
-- `g:NotmuchMaildirSyncCmd` (default `mbsync -c $XDG_CONFIG_HOME/isync/mbsyncrc -a`): Customize this command for mail synchronization with remote servers.
-  
-- `g:NotmuchOpenCmd` : Define a command to open email attachments, with
-  OS-specific defaults set initially to `open(1)` on macOS and `xdg_open(1)`
-  otherwise.
+| Option             | Description                              | Default value |
+| :----------------- | :--------------------------------------: | :------------ |
+| `notmuch_db_path`  | Directory containing the `.notmuch/` dir | `$HOME/Mail`  |
+| `maildir_sync_cmd` | Bash command to run for syncing maildir  | `mbsync -a`   |
+| `open_cmd`         | Bash command for opening attachments     | `xdg-open`    |
+
+Example in plugin manager (lazy.nvim):
+
+```lua
+{
+    "yousefakbar/notmuch.nvim",
+    config = function()
+        local opts = {
+            -- Configure plugin options here
+            notmuch_db_path = "/home/xxx/Documents/Mail"
+            maildir_sync_cmd = "mbsync personal"
+        }
+
+        require('notmuch').setup(opts)
+
+        -- Commands and keymaps to use with notmuch.nvim
+        vim.cmd[[command Inbox :NmSearch tag:inbox]]
+        vim.keymap.set("n", "<leader>n", "<CMD>Notmuch<CR>")
+    end
+},
+```
 
 ## License
 
