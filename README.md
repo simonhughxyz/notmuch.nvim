@@ -56,6 +56,8 @@ You can install Notmuch.nvim using your favorite NeoVim plugin manager.
     'yousefakbar/notmuch.nvim',
     config = function()
         -- Configuration goes here
+        local opts = {}
+        require('notmuch').setup(opts)
     end,
 }
 ```
