@@ -1,0 +1,641 @@
+*notmuch.txt*	Notmuch of an email interface
+
+Author:  Yousef H. Akbar <yousef@yhakbar.com>
+
+==============================================================================
+CONTENTS                                                     *notmuch-contents*
+
+  Introduction                          |notmuch-introduction|
+    Feature Overview                    |notmuch-features|
+    Requirements                        |notmuch-requirements|
+    Installation                        |notmuch-installation|
+    Other Notmuch Plugins               |notmuch-other-plugins|
+  Usage                                 |notmuch-usage|
+    Commands                            |notmuch-commands|
+    Options                             |notmuch-options|
+    Completion                          |notmuch-completion|
+  Behavior                              |notmuch-behavior|
+    Buffers                             |notmuch-buffers|
+    Asynchronous Operations             |notmuch-async|
+    Highlighting                        |notmuch-syntax-highlight|
+  Lua Structure                         |notmuch-structure|
+    Lua Modules Explained               |notmuch-modules|
+    Library Bindings                    |notmuch-lib-bindings|
+  Developer Roadmap                     |notmuch-roadmap|
+    Bugs and Suggestions                |notmuch-bug-reporting|
+  License                               |notmuch-license|
+
+==============================================================================
+INTRODUCTION                                             *notmuch-introduction*
+
+Notmuch is a command line program that indexes your local mail from a Maildir
+structure into a database wherein each message or thread can be tagged,
+searched, and manipulated in flexible and powerful ways. To learn more about
+the email program, check out the project website:
+
+    `Notmuch`: https://notmuchmail.org
+
+Notmuch.nvim interfaces the notmuch mail indexer to provide a convenient mail
+reader as a NeoVim plugin. The main goal of Notmuch.nvim is to bring closer
+the workflow of reading mail and editing text. In a sense, this plugin acts as
+a front-end for notmuch's command line interface.
+
+Note: This plugin is written almost entirely in Lua, and hence requires NeoVim
+version 0.5 to make use of the embedded LuaJIT compiler.
+
+------------------------------------------------------------------------------
+FEATURE OVERVIEW                                             *notmuch-features*
+
+The Notmuch plugin ships with two main vim commands. These can be extended
+using your own commands, functions, or mappings.
+
+The first command, |:Notmuch| , serves as an entry point into notmuch by
+displaying a list of all available tags in your database. The second command,
+|:NmSearch| , performs a query on your notmuch database using given arguments
+and returns a list of matched threads. These commands are explained in more
+depth in |notmuch-commands|
+
+Here is a non-comprehensive list of features of notmuch.nvim:
+
+- Browse your email(s)
+  - Traverse through threads with familiar Vim movements
+  - Manipulate text with visual selections and registers
+- Read threads in thread view
+  - Each message in the thread is loaded into buffer
+  - Folding enabled for each message
+  - Messages indented based on reply level
+- Inspect the attachments of messages
+  - Save to current directory
+  - View attachment with `open(1)`-like command
+  - Plain text message is automatically displayed
+- Sync your mail with simple mappings
+  - Native support for `isync(1)`/`mbsync(1)`
+  - Sync command can be extended and modified
+- Search your notmuch database asynchronously
+  - Non-blocking: do your thing while results pour in
+  - Any search term accepted by `notmuch-search-terms(1)`
+    - Completion provided with the `:NmSearch` command
+  - Returns a list of threads
+- Tagging threads/messages
+  - Add, remove, or toggle one or more tags at once
+  - Inspect all tags pertinent to thread/msg
+- GitHub compatibility features
+  - Follow pull request patches
+- Extract URLs with a script
+
+------------------------------------------------------------------------------
+REQUIREMENTS                                             *notmuch-requirements*
+
+The following is a list of specific requirements for running Notmuch.nvim. The
+plugin depends on bare minimum requirements in terms of installation and
+doesn't depend on any external plugins.
+
+NeoVim version~
+
+  Notmuch.nvim requires NeoVim (>=0.5) to make use of its embedded LuaJIT
+  compiler, since the plugin is written mostly in Lua. The plugin is currently
+  tested on as late as version (v0.5.0-dev+991-g74b343a6f).
+
+  If your operating system or distribution only contains an older version, you
+  can build the source code from HEAD or from the nightly branch (recommended)
+  from the following GitHub page:
+
+      `NeoVim`: https://github.com/neovim/neovim
+
+  Keep in mind this plugin is not compatible with Vim. It is designed
+  specifically for NeoVim and will not work for the former.
+
+Notmuch~
+
+  The plugin interfaces with Notmuch and requires the executable to be
+  installed, which you will probably have anyway provided that you plan to use
+  the plugin to manipulate mail.
+
+  More specifically the plugin contains bindings that call on functions from
+  the libnotmuch library. Ensure that you have these installed.
+
+  Both the mentioned items can be installed through your operating system's
+  native package manager, or you can build it from source:
+
+      `Notmuch`: https://notmuchmail.org
+
+------------------------------------------------------------------------------
+INSTALLATION                                             *notmuch-installation*
+
+Notmuch.nvim, like other (Neo)Vim plugins, can be installed using a plugin
+manager. Use your preferred plugin manager to download and install this
+plugin.
+
+Alternatively, you can download the source code from the repository manually
+to your filesystem, and add that directory to your 'runtimepath': >
+
+    git clone git://git.yousef.sh/notmuch.nvim.git
+<
+------------------------------------------------------------------------------
+OTHER NOTMUCH PLUGINS                                   *notmuch-other-plugins*
+
+Notmuch.nvim acts as a front-end for the Notmuch command line interface. There
+are other plugins and front-ends from which Notmuch.nvim draws inspiration.
+For a list of more -- not necessarily plugin -- front-ends for Notmuch, check
+their webpage [1].
+
+The first is the Notmuch Emacs package [2], which behaves and looks really
+similar to this plugin. The index view, thread-centric view and behavior, and
+message folding is mostly inspired by the Emacs package.
+
+The second front-end worth a look is the notmuch-vim plugin [3]. This is
+another plugin, written in Ruby, for Vim. It supports a similar index view and
+is also thread-based. Notmuch.nvim draws inspiration from its tagging
+capabilities and buffer-specific highlighting. For a more complete overview of
+notmuch-vim's features, see the demo video [4] made by its author, Felipe
+Contreras.
+
+What's the difference between Notmuch.nvim and notmuch-vim? Well for starters,
+Notmuch.nvim works in NeoVim (not Vim). Notmuch.nvim is written in Lua and,
+with LuaJIT, runs a bit faster. Notmuch.nvim supports asynchronous searching:
+you can continue in the main event loop while results pour in (especially
+useful for large tags/results). Notmuch.nvim also supports extraction of
+non-text attachments on top of the plain text view. These are features I think
+enhance the quality of life while browsing mail from a text editor.
+
+              {1} https://notmuchmail.org/frontends/
+              {2} https://notmuchmail.org/notmuch-emacs/
+              {3} https://git.notmuchmail.org/git/notmuch/blob/HEAD:/vim/README
+              {4} https://youtu.be/JGD7IbZmnIs
+
+==============================================================================
+USAGE                                                           *notmuch-usage*
+
+There are two main commands that serve as an entry point to the Notmuch
+interface. To see a list of features covered by this plugin, check the
+|notmuch-features| section. In this section we cover the commands, discuss how
+to use them and extend them, and provide some defaults and global variables
+that can be customized.
+
+Notmuch.nvim is a thread-based mail reader. The main workflow and usage of the
+plugin is to browse/search through threads, open and read them in plain text,
+extract their attachments and open them in external programs, and manipulate
+the tags associated with threads or individual messages within the notmuch
+database.
+
+------------------------------------------------------------------------------
+COMMANDS                                                     *notmuch-commands*
+
+Let's showcase the two main commands that give the user a window into the
+Notmuch.nvim plugin and the local mail system to search and browse.
+
+                                                    *:Notmuch*
+:Notmuch             Shows a list of tags from the notmuch database in a new
+                     buffer. Pressing <CR> on any tag will search the buffer
+		     for all threads with that tag.
+
+		     Note: I recommend setting up a key mapping that invokes
+		     this command. That way you can access your notmuch mail
+		     with ease. For example: >
+
+		       nmap <silent> <leader>n :Notmuch<CR>
+<
+                                                    *:NmSearch*
+:NmSearch            Search and return a list of threads based on a notmuch
+                     query. The arguments of this command match the format of
+		     Notmuch's accepted search terms and supports generic
+		     completion (see `notmuch_search_terms(7)`). For example: >
+
+		       :NmSearch tag:inbox and date:today and subject:Urgent
+<
+                     Note: This command can be extended to quickly perform
+		     frequently used searches. For example: >
+
+		       command Inbox :NmSearch tag:inbox
+<
+                     Now your inbox is one word away at all times. This can
+		     even be generalized as a shell alias such that you can
+		     jump from the shell straight to your or any other handy
+		     search term you want.
+
+                                                    *:NmNew*
+:NmNew               Invoke `notmuch new` in the external shell to refresh
+                     your Notmuch database. This is a modular command to be
+		     used when you have new mail or would like to refresh your
+		     tags for whatever reason.
+
+                                                    *:NmSync*
+:NmSync              Refresh and synchronize your local Maildir directories
+                     with the remote server to keep them on track with each
+		     other. Typically this (1) invokes a remote synchronizing
+		     command in the shell (`mbsync(1)` by default) and then
+		     (2) refreshes your notmuch database with `notmuch new` .
+
+		     Note: By default, the sync command is set to: >
+
+		       mbsync -c $XDG_CONFIG_HOME/isync/mbsyncrc -a
+<
+                     But this command can be customized by setting
+		     |g:NotmuchMaildirSyncCmd| to a valid command.
+
+------------------------------------------------------------------------------
+OPTIONS                                                       *notmuch-options*
+
+This is a list of global options associated with the Notmuch.nvim plugin. They
+can be modified to alter the granular behavior of some notmuch commands. Each
+option will be listed with its default value.
+
+*g:NotmuchDBPath*
+  Path to your notmuch database. More precisely, set this to the directory
+  that contains the `.notmuch` directory.
+
+  Default value:
+    `'$HOME/Mail'`
+
+*g:NotmuchMaildirSyncCmd*
+  Program to run when synchronizing your local maildir mail to the remote
+  (IMAP or otherwise) server. Do not include the `notmuch new` refresh command
+  in this option. See |:NmSync| to see how this is used.
+
+  Default value:
+    `mbsync -c $XDG_CONFIG_HOME/isync/mbsyncrc -a`
+
+*g:NotmuchOpenCmd*
+  Catch-all program to invoke when opening attachments from messages. This is
+  initially based on operating system, but can be customized to something
+  else.
+
+  Default value:
+    `open(1)`        if MacOS.
+    `xdg_open(1)`    otherwise
+
+------------------------------------------------------------------------------
+COMPLETION                                                 *notmuch-completion*
+
+Notmuch.nvim provides a handy autoload function that returns completion items
+for commands. Specifcially this is used for |:NmSearch| as it helps quickly
+type search terms. The function in question is called
+`notmuch#CompSearchTerms()` and matches the format for generic completion
+functons (|command-completion-custom|).
+
+Although this is used for |:NmSearch|, you can actually use this as a
+completion function for any custom commands you may want to define. The
+completion function returns two types of results:
+
+  * If the word under the cursor says 'tags:', returns a list of all the tags
+    available in the notmuch database.
+  * Otherwise returns a list of all the valid search terms (see
+    `notmuch-search-terms(1)`)
+
+Note: Interestingly enough, this is the only bit of Vimscript logic used in
+the entire plugin (at least as of right now).
+
+==============================================================================
+BEHAVIOR                                                     *notmuch-behavior*
+
+This section goes through the interface elements that make up the
+`notmuch.nvim` plugin. Namely, the buffer system, asynchronous functionality,
+and the syntax highlighting (more to come on configuration options in the
+future.
+
+------------------------------------------------------------------------------
+BUFFERS                                                       *notmuch-buffers*
+
+The Notmuch.nvim plugin uses scratch buffers extensively to provide an
+organized and interactive interface for reading and managing emails within
+NeoVim. Buffers are the primary means of displaying and interacting with tags,
+threads, emails, and attachments. Below are the key features and behaviors
+related to buffers:
+
+- *Scratch Buffers* ~
+  All buffers created by Notmuch.nvim are scratch buffers. These buffers do
+  not persist on disk and are marked as read-only by default, except in
+  specific cases where editing is allowed.
+
+- *Buffer Types* ~
+  Notmuch.nvim utilizes different buffer types for distinct functionalities:
+  - *Tags Buffer*:
+    Displays a list of all tags in the database.
+  - *Threads Buffer*:
+    Lists threads matching a search query.
+  - *Thread View Buffer*:
+    Provides a detailed view of a thread, displaying messages in an indented 
+    and folded format.
+
+- *Buffer Navigation* ~
+  - Pressing <CR> on a tag in the Tags Buffer initiates a search for threads 
+    with that tag.
+  - In the Threads buffer, <CR> opens the selected thread in a Thread View
+    buffer.
+  - Attachments in the Attachments Buffer can be accessed using the provided
+    commands.
+
+- *Closing Buffers* ~
+  - All Notmuch.nvim buffers can be closed by pressing `q`.
+
+- *Buffer Refresh* ~
+  Buffers can be refreshed dynamically without being closed by pressing `r`.
+
+- *Buffer Naming* ~
+  Buffers are named contextually for better organization:
+  - Tags Buffer: `"Tags"`
+  - Threads Buffer: Matches the search query string.
+  - Thread View Buffer: `"thread:"` followed by the thread ID.
+  - Attachments Buffer: `"id:"` followed by the message ID.
+
+These features leverage NeoVim's buffer system to deliver a seamless and
+efficient email management experience, making it easier to navigate and
+interact with your email directly from the editor.
+
+------------------------------------------------------------------------------
+ASYNCHRONOUS OPERATIONS                                         *notmuch-async*
+
+One of the standout features of Notmuch.nvim is its support for asynchronous 
+operations. This allows the plugin to perform tasks such as searching or 
+synchronizing mail in the background, ensuring that NeoVim remains responsive 
+and usable during these operations.
+
+- *Non-Blocking User Experience* ~
+  - Tasks such as retrieving tags, executing searches, and syncing mail are 
+    performed without interrupting the user's workflow. This means users can 
+    continue to navigate buffers, write text, or execute other commands 
+    without waiting for these tasks to complete.
+  - This is particularly useful for users dealing with large mailboxes, as 
+    synchronization can take some time.
+
+- *Asynchronous Searching* ~
+  - The |:NmSearch| command leverages asynchronous processing to perform 
+    searches in the Notmuch database. As results are retrieved, they are 
+    displayed incrementally in the Threads Buffer, allowing users to begin 
+    interacting with results while the search continues.
+
+- *Asynchronous Synchronization* ~
+  - The |:NmSync| command synchronizes the local Maildir with the remote 
+    server and refreshes the Notmuch database, all without blocking the main 
+    NeoVim interface.
+
+By offloading heavy tasks to asynchronous processes, Notmuch.nvim ensures a
+smooth and efficient user experience, even for users with large mail
+databases.
+
+------------------------------------------------------------------------------
+HIGHLIGHTING                                         *notmuch-syntax-highlight*
+
+Notmuch.nvim employs syntax highlighting to enhance the readability and
+usability of its various buffers. Different types of content, such as tags,
+threads, and message details, are visually distinguished through carefully
+chosen highlighting rules.
+
+- *General Syntax Highlighting* ~
+  - Notmuch.nvim uses dedicated syntax rules for different buffer types:
+    - **Tags Buffer**: Tags are highlighted to make them easy to identify and
+      differentiate.
+    - **Threads Buffer**: Threads are broken down into distinct components,
+      such as thread IDs, subjects, senders, and tags, each with their own
+      highlighting style.
+    - **Thread View Buffer**: Indented replies and folded messages are
+      visually structured, making it easy to understand the flow of
+      conversations.
+    - **Attachments Buffer**: Different content types (e.g., `text/plain`,
+      `image/jpeg`) are highlighted to help identify attachment formats.
+
+- *Tags Highlighting* ~
+  - Tags like `inbox`, `unread`, and `flagged` are highlighted with specific 
+    colors. For example:
+      - `inbox`: Orange
+      - `unread`: Cyan
+      - `flagged`: Red
+  - (TODO) : Make tag highlighting color configurable by user 
+
+- *Custom Syntax Patterns* ~
+  - The plugin uses regex-based syntax patterns to identify and highlight 
+    specific elements, such as:
+    - Email addresses
+    - Timestamps
+    - Content type headers in messages and attachments
+  - These patterns are designed for clarity and ease of reading.
+
+- *Theming and Customization* ~
+  - The plugin seamlessly integrates with existing Vim/NeoVim themes by
+    linking its custom highlight groups to standard groups.
+  - Advanced users can redefine these groups for a more personalized visual
+    experience.
+
+==============================================================================
+LUA STRUCTURE                                               *notmuch-structure*
+
+The Notmuch.nvim plugin is primarily written in Lua, leveraging NeoVim's 
+embedded LuaJIT runtime for performance and flexibility. To view the source
+code, or to contribute (please do!), please visit the GitHub repo linked
+below:
+
+    `notmuch.nvim`: https://github.com/yousefakbar/notmuch.nvim
+
+This section provides an overview of the Lua files in the plugin's
+`lua/notmuch/` directory and their purpose (see |notmuch-modules|), aimed at
+developers interested in understanding, modifying, or contributing to the
+codebase.
+
+------------------------------------------------------------------------------
+LUA MODULES                                                   *notmuch-modules*
+
+This section describes the purpose of each file/module contained in the
+plugin's project codebase.
+
+- *Module Descriptions* ~
+
+  - **init.lua**:
+    - The main entry point for Lua functionality in the plugin.
+    - Defines global configurations like `NotmuchDBPath`,
+      `NotmuchMaildirSyncCmd`, and `NotmuchOpenCmd`.
+    - Implements core commands such as |:NmSearch| and |:Notmuch|, and
+      provides functions for refreshing buffers and displaying tags or
+      threads.
+
+  - **tag.lua**:
+    - Handles operations related to tagging threads and messages.
+    - Implements functions to add, remove, or toggle tags on individual 
+      messages or entire threads.
+    - Directly interacts with the Notmuch database via LuaJIT bindings.
+
+  - **attach.lua**:
+    - Manages email attachments, providing functions to:
+      - List attachments in a thread.
+      - Save attachments to a directory.
+      - Open attachments using external programs.
+    - Supports extracting URLs from messages and following GitHub patch links.
+    - (TODO) : Add attachments later for composing emails
+
+  - **sync.lua**:
+    - Handles synchronization of the Maildir with the remote server.
+    - Executes the sync command defined in `NotmuchMaildirSyncCmd` followed 
+      by refreshing the Notmuch database with `notmuch new`.
+    - Operates asynchronously, ensuring a non-blocking experience.
+
+  - **float.lua**:
+    - Implements floating windows for displaying custom content or terminals.
+    - Includes utility functions for creating bordered floating windows.
+    - Provides an interactive terminal experience integrated with NeoVim.
+
+  - **cnotmuch.lua**:
+    - A LuaJIT binding to the Notmuch C library (`libnotmuch`).
+    - Wraps Notmuch's C API to enable operations like:
+      - Opening and querying the database.
+      - Searching/counting messages and threads.
+      - Managing tags programmatically.
+    - Provides a low-level interface for direct interaction with Notmuch.
+
+  - **util.lua**:
+    - Contains utility functions for common operations such as:
+      - Splitting strings.
+      - Capturing shell command output.
+      - Debugging and printing Lua tables.
+    - Used internally by other modules to simplify code and enhance
+      maintainability.
+
+- *Contributing Tips* ~
+  Developers looking to contribute or customize the plugin can start with:
+    - `init.lua` for understanding the plugin's entry point and default 
+      behaviors.
+    - `tag.lua` or `attach.lua` for adding or modifying functionality related 
+      to tags or attachments.
+    - `cnotmuch.lua` for extending the interface with the Notmuch C library.
+
+For a deeper dive into asynchronous operations, refer to the |notmuch-async| 
+section. To understand how the plugin integrates highlighting, see 
+|notmuch-syntax-highlight|.
+
+------------------------------------------------------------------------------
+NOTMUCH LIBRARY BINDINGS                                 *notmuch-lib-bindings*
+
+Notmuch.nvim uses LuaJIT bindings to interface directly with the Notmuch C 
+library (`libnotmuch`). These bindings enable high-performance access to the 
+Notmuch database, allowing the plugin to perform operations such as querying, 
+tagging, and retrieving messages or threads.
+
+- *Purpose* ~
+  The bindings, implemented in `cnotmuch.lua`, serve as a bridge between Lua 
+  and `libnotmuch`. They expose essential functions to manipulate the Notmuch 
+  database programmatically within NeoVim.
+
+- *Key Functions* ~
+  The following operations are supported through the bindings:
+  - Opening the database: `notmuch_database_open`
+  - Creating queries: `notmuch_query_create`
+  - Counting messages and threads: `notmuch_query_count_messages`, 
+    `notmuch_query_count_threads`
+  - Retrieving tags: `notmuch_database_get_all_tags`
+  - Managing tags: `notmuch_message_add_tag`, `notmuch_message_remove_tag`
+  - Fetching thread or message details: `notmuch_thread_get_subject`, 
+    `notmuch_message_get_tags`
+
+- *Usage* ~
+  These bindings are used throughout the plugin to perform database operations
+  efficiently. For example:
+  - Adding a tag to a message:
+    ```lua
+    local db = require'notmuch.cnotmuch'('/path/to/db', 1)
+    local msg = db.get_message('message-id')
+    msg:add_tag('important')
+    db.close()
+    ```
+
+- *Dependencies* ~
+  Ensure `libnotmuch` is installed on your system for the bindings to work.
+  For more information, refer to: https://notmuchmail.org.
+
+These bindings form the foundation of the plugin's database interactions,
+enabling the advanced features described in |notmuch-commands| and
+|notmuch-async|. For details on the Lua structure of the plugin, see
+|notmuch-structure|.
+
+==============================================================================
+DEVELOPER ROADMAP                                             *notmuch-roadmap*
+
+This section outlines the future direction of Notmuch.nvim, including planned
+features, improvements, and areas for contribution. The roadmap aims to
+enhance the plugin’s functionality, user experience, and developer
+accessibility.
+
+- *Current Limitations* ~
+  - Some advanced Notmuch features (e.g., specific query operators or rare
+    database manipulations) are not yet exposed through the plugin.
+  - Limited configuration options for customizing tag and thread highlighting.
+  - Attachment handling could be more robust, with better support for various
+    MIME types.
+  - The plugin depends heavily on the presence of external tools like
+    `mbsync`, which may limit portability. Make it configurable.
+  - Missing send/compose/reply feature. As of now it is read mail only.
+
+- *Planned Features* ~
+  - Improved highlighting customization, allowing users to define their own
+    colors and styles for tags, threads, and message components.
+  - Expanded Lua API to expose more of Notmuch’s functionality for advanced
+    scripting.
+  - Enhanced error handling and debugging tools to assist developers and users
+    in troubleshooting.
+  - Integration with other plugins or external tools (e.g., email encryption
+    workflows, calendar integration).
+  - Improved attachment handling, including preview and inline viewing
+    options.
+  - Implement send/compose/reply feature.
+
+- *Community Contributions* ~
+  Contributions are welcome! Key areas where developers can assist:
+  - Improving documentation for both users and developers.
+  - Adding tests to ensure stability and robustness.
+  - Suggesting and implementing compatibility enhancements.
+  - Implementing any of the above mentioned planned features.
+
+This roadmap will evolve over time based on user feedback and contributions. 
+
+------------------------------------------------------------------------------
+BUG REPORTING AND SUGGESTIONS                           *notmuch-bug-reporting*
+
+Your feedback is invaluable for improving Notmuch.nvim. If you encounter bugs,
+have feature requests, or want to contribute, please use the GitHub repository
+to share your input.
+
+- *Reporting Bugs* ~
+  - Clearly describe the issue, including steps to reproduce it and any error
+    messages or logs.
+  - Mention your system details, such as NeoVim version, operating system, and
+    Notmuch version.
+
+- *Requesting Features* ~
+  - Provide a concise description of the feature you’d like to see.
+  - Include examples of how it could improve the plugin or your workflow.
+
+- *Contributing* ~
+  - Contributions are welcome! Whether it’s fixing bugs, improving
+    documentation, or adding new features, your help is appreciated.
+
+- *GitHub Repository* ~
+  Visit the GitHub repository to report issues, request features, or submit
+  pull requests: >
+
+    https://github.com/yousefakbar/notmuch.nvim
+
+Thank you for helping make Notmuch.nvim better!
+
+==============================================================================
+LICENSE                                                       *notmuch-license*
+
+License: MIT License
+
+Copyright (c) 2021 Yousef Akbar
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+vim:tw=78:isk=!-~,^*,^\|,^\":ts=8:noet:ft=help:norl:
