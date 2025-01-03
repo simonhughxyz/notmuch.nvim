@@ -20,6 +20,7 @@ local v = vim.api
 nm.setup = function(opts)
   -- Set up the main entry point command :Notmuch
   vim.cmd[[command Notmuch :lua require('notmuch').notmuch_hello()]]
+  vim.cmd[[command Inbox :lua require('notmuch').search_terms("tag:inbox")]]
 
   -- Configure global variables based on user arguments OR default values
   vim.g.NotmuchDBPath = opts.notmuch_db_path or os.getenv("HOME") .. '/Mail'
