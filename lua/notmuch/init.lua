@@ -160,9 +160,9 @@ end
 nm.count = function(search)
   local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 0)
   local q = db.create_query(search)
-  local count_messages = q.count_messages()
+  local count_threads = q.count_threads()
   db.close()
-  return count_messages
+  return "[" .. search .. "]: " .. count_threads .. " threads"
 end
 
 --- Opens the landing/homepage for Notmuch: the `hello` page
