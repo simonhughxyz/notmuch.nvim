@@ -11,6 +11,7 @@ local v = vim.api
 --                    setup
 --
 -- @usage
+-- -- Example from inside `lazy.nvim` plugin spec configuration
 -- {
 --   config = function()
 --     opts = { ... } -- options go here
@@ -28,132 +29,37 @@ nm.setup = function(opts)
   vim.g.NotmuchOpenCmd = opts.open_cmd or 'xdg-open'
 end
 
-local function indent_depth(buf, lineno, depth)
-  local line = vim.fn.getline(lineno)
-  local s = ''
-  for i=0,depth-1 do s = '────' .. s end
-  v.nvim_buf_set_lines(buf, lineno-1, lineno, true, { s .. line })
-end
-
-local function process_msgs_in_thread(buf)
-  local msg = {}
-  local lineno = 1
-  local last = vim.fn.line('$')
-  while lineno <= last do
-    local line = vim.fn.getline(lineno)
-    if string.match(line, "^message{") ~= nil then
-      msg.id = string.match(line, 'id:%S+')
-      msg.depth = tonumber(string.match(string.match(line, 'depth:%d+'), '%d+'))
-      msg.filename = string.match(line, 'filename:%C+')
-      v.nvim_buf_set_lines(buf, lineno-1, lineno, true, {})
-      lineno = lineno - 1
-      last = last - 1
-    elseif string.match(line, '^header{') ~= nil then
-      v.nvim_buf_set_lines(buf, lineno-1, lineno, true, {})
-      indent_depth(buf, lineno, msg.depth)
-      line = vim.fn.getline(lineno)
-      v.nvim_buf_set_lines(buf, lineno-1, lineno, true, { line, msg.id .. ' {{{' })
-    elseif string.match(line, '^Subject:') ~= nil then
-      lineno = lineno + 2
-      last = last + 1
-    elseif string.match(line, '^header}') ~= nil then
-      v.nvim_buf_set_lines(buf, lineno-1, lineno, true, { '' })
-    elseif string.match(line, '^message}') ~= nil then
-      v.nvim_buf_set_lines(buf, lineno-1, lineno, true, { '}}}', '' })
-      lineno = lineno + 1
-      last = last + 1
-    elseif string.match(line, '^%a+[{}]') ~= nil then
-      v.nvim_buf_set_lines(buf, lineno-1, lineno, true, {})
-      lineno = lineno - 1
-      last = last - 1
-    end
-    lineno = lineno + 1
-  end
-end
-
---- Opens the landing/homepage for Notmuch: the `hello` page
+-- Launch `notmuch.nvim` landing page
 --
--- This function opens the main landing page for `notmuch.nvim`. It essentially
--- consists of all the tags in the `notmuch` database for the user to select or
--- count. They can also search from here etc.
+-- This function launches the main entry point of the plugin into your notmuch
+-- database. You are greeted with a list of all the tags in your database,
+-- available for querying and/or counting. First line contains help hints.
+--
+-- If buffer is already open from before, it will simply load it as active
 --
 -- @usage
--- nm.show_all_tags() -- opens the `hello` page
-local function show_all_tags()
-  local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 0)
-
-  -- Create dedicated buffer. Content is fetched using `db.get_all_tags()`
-  local buf = v.nvim_create_buf(true, true)
-  v.nvim_buf_set_name(buf, "Tags")
-  v.nvim_win_set_buf(0, buf)
-  v.nvim_buf_set_lines(buf, 0, 0, true, db.get_all_tags())
-
-  -- Insert help hints at the top of the buffer
-  local hint_text = "Hints: <Enter>: Show threads | q: Close | r: Refresh | %: Refresh maildir | c: Count messages"
-  v.nvim_buf_set_lines(buf, 0, 0, false, { hint_text , "" })
-
-  -- Clean up the buffer and set the cursor to the head
-  v.nvim_win_set_cursor(0, { 3, 0})
-  v.nvim_buf_set_lines(buf, -2, -1, true, {})
-  vim.bo.filetype = "notmuch-hello"
-  vim.bo.modifiable = false
-
-  db.close()
+-- lua require('notmuch').notmuch_hello()
+nm.notmuch_hello = function()
+  local bufno = vim.fn.bufnr('Tags')
+  if bufno ~= -1 then
+    v.nvim_win_set_buf(0, bufno)
+  else
+    nm.show_all_tags() -- Move to tag.lua
+  end
+  print("Welcome to Notmuch.nvim! Choose a tag to search it.")
 end
 
-nm.count = function(search)
-  local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 0)
-  local q = db.create_query(search)
-  local count_messages = q.count_messages()
-  db.close()
-  return count_messages
-end
-
-local function run_notmuch_search(search, buf, on_complete)
-  local stdout = vim.loop.new_pipe(false)
-  local stderr = vim.loop.new_pipe(false)
-
-  local handle
-  handle = vim.loop.spawn("notmuch", {
-    args = {"search", search},
-    stdio = {nil, stdout, stderr}
-  }, vim.schedule_wrap(function()
-    -- Close the pipes and handle
-    stdout:close()
-    stderr:close()
-    handle:close()
-
-    -- Call the completion callback
-    on_complete()
-  end))
-
-  -- Helper variable for maintaining incomplete lines between reads
-  local partial_data = ""
-
-  -- Read data from stdout and write it to the buffer
-  vim.loop.read_start(stdout, vim.schedule_wrap(function(_, data)
-    if data then
-      -- Combine earlier incomplete chunk with newest read
-      partial_data = partial_data .. data
-      local lines = vim.split(partial_data, '\n')
-      -- collect incomplete line at the tail of lines
-      partial_data = table.remove(lines)
-
-      -- Paste lines into the tail of `buf`
-      vim.bo[buf].modifiable = true
-      vim.api.nvim_buf_set_lines(buf, -1, -1, false, lines)
-      vim.bo[buf].modifiable = false
-    end
-  end))
-
-  -- Log errors from stderr
-  vim.loop.read_start(stderr, vim.schedule_wrap(function(err, _)
-    if err then
-      vim.notify("ERROR: " .. err)
-    end
-  end))
-end
-
+-- Conducts a `notmuch search` operation
+--
+-- This function takes a search term, runs the query against your notmuch
+-- database **asynchronously** and returns the list of thread results in a
+-- buffer for the user to browse
+--
+-- @param search string: search terms matching format from
+--                       `notmuch-search-terms(7)`
+--
+-- @usage
+-- lua require('notmuch').search_terms('tag:inbox')
 nm.search_terms = function(search)
   local num_threads_found = 0
   if search == '' then
@@ -175,12 +81,13 @@ nm.search_terms = function(search)
   v.nvim_buf_set_lines(buf, 0, 2, false, { hint_text , "" })
 
   -- Async notmuch search to make the UX non blocking
-  run_notmuch_search(search, buf, function()
+  require('notmuch.async').run_notmuch_search(search, buf, function()
     -- Completion logic
     if vim.fn.getline(2) ~= '' then num_threads_found = vim.fn.line('$') - 1 end
     print('Found ' .. num_threads_found .. ' threads')
   end)
 
+  -- Set cursor at head of buffer, declare filetype, and disable modifying
   v.nvim_win_set_cursor(0, { 1, 0 })
   v.nvim_buf_set_lines(buf, -2, -1, true, {})
   vim.bo.filetype = "notmuch-threads"
@@ -198,7 +105,7 @@ end
 --
 -- @usage
 -- nm.show_thread("thread:00000000000003aa")
--- nm.show_thread(v.nvim_get_current_line())
+-- nm.show_thread(vim.api.nvim_get_current_line())
 nm.show_thread = function(s)
   -- Fetch the threadid from the input `s` or from current line
   local threadid = ''
@@ -227,7 +134,7 @@ nm.show_thread = function(s)
   v.nvim_command("silent 0read! notmuch show --exclude=false thread:" .. threadid .. " | col")
 
   -- Clean up the messages in the thread to display in UI friendly way
-  process_msgs_in_thread(buf)
+  require('notmuch.util').process_msgs_in_thread(buf)
 
   -- Insert hint message at the top of the buffer
   local hint_text = "Hints: <Enter>: Toggle fold message | <Tab>: Next message | <S-Tab>: Prev message | q: Close | a: See attachment parts"
@@ -240,31 +147,52 @@ nm.show_thread = function(s)
   vim.bo.modifiable = false
 end
 
-nm.refresh_search_buffer = function()
-  local search = string.match(v.nvim_buf_get_name(0), '%a+:%C+')
-  v.nvim_command('bwipeout')
-  nm.search_terms(search)
+-- Counts the number of threads matching the search terms
+--
+-- This function runs a search query in your `notmuch` database against the
+-- argument search terms and returns the number of threads which match
+--
+-- @param search string: search terms matching format from
+--                       `notmuch-search-terms(7)`
+--
+-- @usage
+-- lua require('notmuch').count('tag:inbox') -- > '999'
+nm.count = function(search)
+  local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 0)
+  local q = db.create_query(search)
+  local count_messages = q.count_messages()
+  db.close()
+  return count_messages
 end
 
-nm.refresh_thread_buffer = function()
-  local thread = string.match(v.nvim_buf_get_name(0), 'thread:%C+')
-  v.nvim_command('bwipeout')
-  nm.show_thread(thread)
-end
+--- Opens the landing/homepage for Notmuch: the `hello` page
+--
+-- This function opens the main landing page for `notmuch.nvim`. It essentially
+-- consists of all the tags in the `notmuch` database for the user to select or
+-- count. They can also search from here etc.
+--
+-- @usage
+-- nm.show_all_tags() -- opens the `hello` page
+nm.show_all_tags = function()
+  local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 0)
 
-nm.refresh_hello_buffer = function()
-  v.nvim_command('bwipeout')
-  show_all_tags()
-end
+  -- Create dedicated buffer. Content is fetched using `db.get_all_tags()`
+  local buf = v.nvim_create_buf(true, true)
+  v.nvim_buf_set_name(buf, "Tags")
+  v.nvim_win_set_buf(0, buf)
+  v.nvim_buf_set_lines(buf, 0, 0, true, db.get_all_tags())
 
-nm.notmuch_hello = function()
-  local bufno = vim.fn.bufnr('Tags')
-  if bufno ~= -1 then
-    v.nvim_win_set_buf(0, bufno)
-  else
-    show_all_tags()
-  end
-  print("Welcome to Notmuch.nvim! Choose a tag to search it.")
+  -- Insert help hints at the top of the buffer
+  local hint_text = "Hints: <Enter>: Show threads | q: Close | r: Refresh | %: Refresh maildir | c: Count messages"
+  v.nvim_buf_set_lines(buf, 0, 0, false, { hint_text , "" })
+
+  -- Clean up the buffer and set the cursor to the head
+  v.nvim_win_set_cursor(0, { 3, 0})
+  v.nvim_buf_set_lines(buf, -2, -1, true, {})
+  vim.bo.filetype = "notmuch-hello"
+  vim.bo.modifiable = false
+
+  db.close()
 end
 
 return nm
