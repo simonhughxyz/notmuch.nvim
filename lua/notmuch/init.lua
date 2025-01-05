@@ -174,13 +174,16 @@ end
 -- @usage
 -- nm.show_all_tags() -- opens the `hello` page
 nm.show_all_tags = function()
+  -- Fetch all tags available in the notmuch database
   local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 0)
+  local tags = db.get_all_tags()
+  db.close()
 
   -- Create dedicated buffer. Content is fetched using `db.get_all_tags()`
   local buf = v.nvim_create_buf(true, true)
   v.nvim_buf_set_name(buf, "Tags")
   v.nvim_win_set_buf(0, buf)
-  v.nvim_buf_set_lines(buf, 0, 0, true, db.get_all_tags())
+  v.nvim_buf_set_lines(buf, 0, 0, true, tags)
 
   -- Insert help hints at the top of the buffer
   local hint_text = "Hints: <Enter>: Show threads | q: Close | r: Refresh | %: Refresh maildir | c: Count messages"
@@ -191,8 +194,6 @@ nm.show_all_tags = function()
   v.nvim_buf_set_lines(buf, -2, -1, true, {})
   vim.bo.filetype = "notmuch-hello"
   vim.bo.modifiable = false
-
-  db.close()
 end
 
 return nm
