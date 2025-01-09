@@ -144,6 +144,9 @@ u.find_cursor_msg_id = function()
     end
     n = n - 1
   end
+
+  -- id not found for the cursor location
+  print('No ID found. Make sure cursor is located in a message')
   return nil
 end
 

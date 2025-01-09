@@ -35,6 +35,7 @@ end
 
 a.get_attachments_from_cursor_msg = function()
   local id = u.find_cursor_msg_id()
+  if id == nil then return end
   local bufnr = vim.fn.bufnr('id:' .. id)
   if id == nil then return nil end
   if bufnr ~= -1 then

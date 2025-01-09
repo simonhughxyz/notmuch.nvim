@@ -6,6 +6,7 @@ t.msg_add_tag = function(tags)
   local t = u.split(tags, '%S+')
   local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 1)
   local id = u.find_cursor_msg_id()
+  if id == nil then return end
   local msg = db.get_message(id)
   for i,tag in pairs(t) do
     msg:add_tag(tag)
@@ -18,6 +19,7 @@ t.msg_rm_tag = function(tags)
   local t = u.split(tags, '%S+')
   local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 1)
   local id = u.find_cursor_msg_id()
+  if id == nil then return end
   local msg = db.get_message(id)
   for i,tag in pairs(t) do
     msg:rm_tag(tag)
@@ -30,6 +32,7 @@ t.msg_toggle_tag = function(tags)
   local t = u.split(tags, '%S+')
   local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 1)
   local id = u.find_cursor_msg_id()
+  if id == nil then return end
   local msg = db.get_message(id)
   local curr_tags = msg:get_tags()
   for i,tag in pairs(t) do
