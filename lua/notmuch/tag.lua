@@ -2,25 +2,10 @@ local t = {}
 local v = vim.api
 local u = require'notmuch.util'
 
-local function find_cursor_msg_id()
-  local n = v.nvim_win_get_cursor(0)[1] + 1
-  local line = nil
-  local id = nil
-  while n ~= 1 do
-    line = vim.fn.getline(n)
-    if string.match(line, '^id:%S+ {{{$') ~= nil then
-      id = string.match(line, '%S+', 4)
-      return id
-    end
-    n = n - 1
-  end
-  return nil
-end
-
 t.msg_add_tag = function(tags)
   local t = u.split(tags, '%S+')
   local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 1)
-  local id = find_cursor_msg_id()
+  local id = u.find_cursor_msg_id()
   local msg = db.get_message(id)
   for i,tag in pairs(t) do
     msg:add_tag(tag)
@@ -32,7 +17,7 @@ end
 t.msg_rm_tag = function(tags)
   local t = u.split(tags, '%S+')
   local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 1)
-  local id = find_cursor_msg_id()
+  local id = u.find_cursor_msg_id()
   local msg = db.get_message(id)
   for i,tag in pairs(t) do
     msg:rm_tag(tag)
@@ -44,7 +29,7 @@ end
 t.msg_toggle_tag = function(tags)
   local t = u.split(tags, '%S+')
   local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 1)
-  local id = find_cursor_msg_id()
+  local id = u.find_cursor_msg_id()
   local msg = db.get_message(id)
   local curr_tags = msg:get_tags()
   for i,tag in pairs(t) do

@@ -121,6 +121,32 @@ u.process_msgs_in_thread = function(buf)
   end
 end
 
+-- Retrieves the id of the message under cursor
+--
+-- This function fetches the id of the message being viewed under the cursor by
+-- iteratively scanning each line backwards for the `id:` field. If used
+-- incorrectly or no id is found, a helpful message will indicate the same
+--
+-- @returns id int: id of the email messageo
+--
+-- @usage
+-- local id = require('notmuch.util').find_cursor_msg_id()
+-- -- Do something with the mail id (e.g. reply, tag, get attachments)
+u.find_cursor_msg_id = function()
+  local n = v.nvim_win_get_cursor(0)[1] + 1
+  local line = nil
+  local id = nil
+  while n ~= 1 do
+    line = vim.fn.getline(n)
+    if string.match(line, '^id:%S+ {{{$') ~= nil then
+      id = string.match(line, '%S+', 4)
+      return id
+    end
+    n = n - 1
+  end
+  return nil
+end
+
 return u
 
 -- vim: tabstop=2:shiftwidth=2:expandtab:foldmethod=indent

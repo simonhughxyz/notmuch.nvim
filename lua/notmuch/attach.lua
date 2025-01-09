@@ -1,20 +1,6 @@
 local a = {}
+local u = require('notmuch.util')
 local v = vim.api
-
-local function find_cursor_msg_id()
-  local n = v.nvim_win_get_cursor(0)[1] + 1
-  local line = nil
-  local id = nil
-  while n ~= 1 do
-    line = vim.fn.getline(n)
-    if string.match(line, '^id:%S+ {{{$') ~= nil then
-      id = string.match(line, '%S+', 4)
-      return id
-    end
-    n = n - 1
-  end
-  return nil
-end
 
 local function show_github_patch(link)
   local buf = v.nvim_create_buf(true, true)
@@ -48,7 +34,7 @@ a.save_attachment_part = function(savedir)
 end
 
 a.get_attachments_from_cursor_msg = function()
-  local id = find_cursor_msg_id()
+  local id = u.find_cursor_msg_id()
   local bufnr = vim.fn.bufnr('id:' .. id)
   if id == nil then return nil end
   if bufnr ~= -1 then
@@ -70,7 +56,7 @@ a.get_urls_from_cursor_msg = function()
     print("Can't launch URL selector (:YTerm command not found)")
     return nil
   end
-  local id = find_cursor_msg_id()
+  local id = u.find_cursor_msg_id()
   if id == nil then return nil end
   v.nvim_command('YTerm "notmuch show id:' .. id .. ' | urlextract"')
 end
