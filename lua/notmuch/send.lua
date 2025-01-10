@@ -80,7 +80,39 @@ s.reply = function()
   end, { buffer = true })
 end
 
+-- Compose a new email
+--
+-- This function creates a new email for the user to edit, with the standard
+-- message headers and body. The mail content is stored in `/tmp/` so the user
+-- can come back to it later if needed.
+--
+-- @usage
+--   -- Typically you can run this with `:ComposeMail` or pressing `C`
+--   require('notmuch.send').compose()
 s.compose = function()
+  local compose_filename = '/tmp/compose.eml'
+
+  -- TODO: Add ability to modify default body message and signature
+  local headers = {
+    'To: ',
+    'Cc: ',
+    'Subject: ',
+    '',
+    'Message body goes here',
+  }
+
+  -- Create new buffer
+  local buf = v.nvim_create_buf(true, false)
+  v.nvim_win_set_buf(0, buf)
+  vim.cmd.edit(compose_filename)
+
+  -- Populate with header fields (date, to, subject)
+  v.nvim_buf_set_lines(buf, 0, -1, false, headers)
+
+  -- Keymap for sending the email
+  vim.keymap.set('n', '<C-c><C-c>', function()
+    confirm_sendmail(compose_filename)
+  end, { buffer = true })
 end
 
 return s

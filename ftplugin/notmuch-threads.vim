@@ -19,3 +19,4 @@ nmap <buffer> = :TagToggle
 nmap <buffer> a :TagToggle inbox<CR>j
 nmap <buffer> A :TagRm inbox unread<CR>j
 nmap <buffer> x :TagToggle unread<CR>j
+nmap <buffer> <silent> C :call v:lua.require('notmuch.send').compose()<CR>
