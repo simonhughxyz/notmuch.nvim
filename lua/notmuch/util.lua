@@ -1,6 +1,16 @@
 local u = {}
 local v = vim.api
 
+u.file_exists = function(path)
+  local file = io.open(path, 'r')
+  if file then
+    file:close()
+    return true
+  else
+    return false
+  end
+end
+
 -- there is a better way to do this !!!
 -- Splits a string given a delimiter
 --
