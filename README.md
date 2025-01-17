@@ -21,9 +21,11 @@ mail indexer, enabling users to read, compose, and manage their emails from
 within NeoVim. It facilitates a streamlined workflow for handling emails using
 the familiar Vim interface and motions.
 
+<!--
 > [!IMPORTANT]
 > This plugin requires NeoVim 0.5 or later to leverage its LuaJIT capabilities.
 > You also need to have `telescope.nvim` for this plugin to work.
+-->
 
 ## Feature Overview
 
