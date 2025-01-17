@@ -2,6 +2,8 @@ local s = {}
 local u = require('notmuch.util')
 local v = vim.api
 
+local config = require('notmuch.config')
+
 -- Prompt confirmation for sending an email
 --
 -- This function utilizes vim's builtin `confirm()` to prompt the user and
@@ -75,7 +77,7 @@ s.reply = function()
   v.nvim_win_set_cursor(0, { 1, 0 }) -- Return cursor to top of file
 
   -- Set keymap for sending
-  vim.keymap.set('n', '<C-c><C-c>', function()
+  vim.keymap.set('n', config.options.keymaps.sendmail, function()
     confirm_sendmail(reply_filename)
   end, { buffer = true })
 end
@@ -110,7 +112,7 @@ s.compose = function()
   v.nvim_buf_set_lines(buf, 0, -1, false, headers)
 
   -- Keymap for sending the email
-  vim.keymap.set('n', '<C-c><C-c>', function()
+  vim.keymap.set('n', config.options.keymaps.sendmail, function()
     confirm_sendmail(compose_filename)
   end, { buffer = true })
 end
