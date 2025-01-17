@@ -106,13 +106,13 @@ Example in plugin manager (lazy.nvim):
 ```lua
 {
     "yousefakbar/notmuch.nvim",
-        opts = {
-            notmuch_db_path = "/home/xxx/Documents/Mail"
-            maildir_sync_cmd = "mbsync personal"
-            keymaps = {
-                sendmail = "<C-g><C-g>",
-            },
+    opts = {
+        notmuch_db_path = "/home/xxx/Documents/Mail"
+        maildir_sync_cmd = "mbsync personal"
+        keymaps = {
+            sendmail = "<C-g><C-g>",
         },
+    },
 },
 ```
 
