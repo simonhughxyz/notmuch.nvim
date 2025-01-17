@@ -34,8 +34,8 @@ the familiar Vim interface and motions.
 - ⬇️ **Offline Mail Sync**: Supports `mbsync` for efficient sync processes.
 - 🔓 **Async Search**: Large mailboxes with thousands of email? No problem.
 - 🏷️ **Tag Management**: Conveniently add, remove, or toggle email tags.
-- 🔭 **Telescope.nvim Integration**: Search interactively, extract URL's, jump
-  efficiently, with the powerful file picker of choice.
+- 🔭 (WIP) ~~**Telescope.nvim Integration**: Search interactively, extract URL's, jump
+  efficiently, with the powerful file picker of choice.~~
 
 ## Requirements
 
@@ -43,8 +43,8 @@ the familiar Vim interface and motions.
   required due to LuaJIT support.
 - **[Notmuch](https://notmuchmail.org)**: Ensure Notmuch and libnotmuch library
   are installed
-- **[Telescope.nvim](https://github.com/nvim-telescope/telescope.nvim)**: File
-  picker of choice for many use cases.
+- (WIP) ~~**[Telescope.nvim](https://github.com/nvim-telescope/telescope.nvim)**: File
+  picker of choice for many use cases.~~
 
 ## Installation
 
