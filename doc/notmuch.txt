@@ -213,6 +213,11 @@ Notmuch.nvim plugin and the local mail system to search and browse.
 		     jump from the shell straight to your or any other handy
 		     search term you want.
 
+                                                    *:Inbox*
+:Inbox               Launches into the user's mail inbox showing all threads
+		     with the `inbox` tag. Essentially implemented by the
+		     |NmSearch| command.
+
                                                     *:NmNew*
 :NmNew               Invoke `notmuch new` in the external shell to refresh
                      your Notmuch database. This is a modular command to be
@@ -231,7 +236,7 @@ Notmuch.nvim plugin and the local mail system to search and browse.
 		       mbsync -c $XDG_CONFIG_HOME/isync/mbsyncrc -a
 <
                      But this command can be customized by setting
-		     |g:NotmuchMaildirSyncCmd| to a valid command.
+		     |maildir_sync_cmd| to a valid command.
 
 ------------------------------------------------------------------------------
 OPTIONS                                                       *notmuch-options*
@@ -240,14 +245,14 @@ This is a list of global options associated with the Notmuch.nvim plugin. They
 can be modified to alter the granular behavior of some notmuch commands. Each
 option will be listed with its default value.
 
-*g:NotmuchDBPath*
+*notmuch_db_path*
   Path to your notmuch database. More precisely, set this to the directory
   that contains the `.notmuch` directory.
 
   Default value:
     `'$HOME/Mail'`
 
-*g:NotmuchMaildirSyncCmd*
+*maildir_sync_cmd*
   Program to run when synchronizing your local maildir mail to the remote
   (IMAP or otherwise) server. Do not include the `notmuch new` refresh command
   in this option. See |:NmSync| to see how this is used.
@@ -255,7 +260,7 @@ option will be listed with its default value.
   Default value:
     `mbsync -c $XDG_CONFIG_HOME/isync/mbsyncrc -a`
 
-*g:NotmuchOpenCmd*
+*open_cmd*
   Catch-all program to invoke when opening attachments from messages. This is
   initially based on operating system, but can be customized to something
   else.
@@ -263,6 +268,14 @@ option will be listed with its default value.
   Default value:
     `open(1)`        if MacOS.
     `xdg_open(1)`    otherwise
+
+*keymaps*
+  Keymap configuration table where you can override plugin defaults for all
+  sorts of commands. Right now it only supports override for `sendmail` but it
+  will be extended to be able to configure every keymap in the plugin.
+
+  Default value:
+    See `config.lua` for plugin defaults.
 
 ------------------------------------------------------------------------------
 COMPLETION                                                 *notmuch-completion*
@@ -447,6 +460,10 @@ plugin's project codebase.
       provides functions for refreshing buffers and displaying tags or
       threads.
 
+  - **config.lua**:
+    - Defines the default configuration options.
+    - Implements configuration option overrides set by the user.
+
   - **tag.lua**:
     - Handles operations related to tagging threads and messages.
     - Implements functions to add, remove, or toggle tags on individual 
@@ -460,6 +477,11 @@ plugin's project codebase.
       - Open attachments using external programs.
     - Supports extracting URLs from messages and following GitHub patch links.
     - (TODO) : Add attachments later for composing emails
+
+  - **send.lua**:
+    - Implements the methods for composing and replying to emails.
+    - Uses `msmtp` as a standard mailsend command
+      - TODO: Will make this command configurable by the user.
 
   - **sync.lua**:
     - Handles synchronization of the Maildir with the remote server.

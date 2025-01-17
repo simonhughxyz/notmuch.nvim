@@ -92,30 +92,27 @@ Here are the core commands within Notmuch.nvim:
 
 You can configure several global options to tailor the plugin's behavior:
 
-| Option             | Description                              | Default value |
-| :----------------- | :--------------------------------------: | :------------ |
-| `notmuch_db_path`  | Directory containing the `.notmuch/` dir | `$HOME/Mail`  |
-| `maildir_sync_cmd` | Bash command to run for syncing maildir  | `mbsync -a`   |
-| `open_cmd`         | Bash command for opening attachments     | `xdg-open`    |
+| Option             | Description                              | Default value       |
+| :----------------- | :--------------------------------------: | :------------       |
+| `notmuch_db_path`  | Directory containing the `.notmuch/` dir | `$HOME/Mail`        |
+| `maildir_sync_cmd` | Bash command to run for syncing maildir  | `mbsync -a`         |
+| `open_cmd`         | Bash command for opening attachments     | `xdg-open`          |
+| `keymaps`          | Configure any (WIP) command's keymap     | See `config.lua`[1] |
+
+[1]: https://github.com/yousefakbar/notmuch.nvim/blob/main/lua/notmuch/config.lua
 
 Example in plugin manager (lazy.nvim):
 
 ```lua
 {
     "yousefakbar/notmuch.nvim",
-    config = function()
-        local opts = {
-            -- Configure plugin options here
+        opts = {
             notmuch_db_path = "/home/xxx/Documents/Mail"
             maildir_sync_cmd = "mbsync personal"
-        }
-
-        require('notmuch').setup(opts)
-
-        -- Commands and keymaps to use with notmuch.nvim
-        vim.cmd[[command Inbox :NmSearch tag:inbox]]
-        vim.keymap.set("n", "<leader>n", "<CMD>Notmuch<CR>")
-    end
+            keymaps = {
+                sendmail = "<C-g><C-g>",
+            },
+        },
 },
 ```
 
