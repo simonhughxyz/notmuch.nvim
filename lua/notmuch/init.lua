@@ -1,6 +1,8 @@
 local nm = {}
 local v = vim.api
 
+local config = require('notmuch.config')
+
 -- Setup `notmuch.nvim`
 --
 -- This function initializes the notmuch.nvim plugin. It defines the entry point
@@ -19,14 +21,12 @@ local v = vim.api
 --   end
 -- }
 nm.setup = function(opts)
+  -- Setup configuration defaults and/or user options
+  config.setup(opts)
+
   -- Set up the main entry point command :Notmuch
   vim.cmd[[command Notmuch :lua require('notmuch').notmuch_hello()]]
   vim.cmd[[command Inbox :lua require('notmuch').search_terms("tag:inbox")]]
-
-  -- Configure global variables based on user arguments OR default values
-  vim.g.NotmuchDBPath = opts.notmuch_db_path or os.getenv("HOME") .. '/Mail'
-  vim.g.NotmuchMaildirSyncCmd = opts.maildir_sync_cmd or 'mbsync -a'
-  vim.g.NotmuchOpenCmd = opts.open_cmd or 'xdg-open'
 end
 
 -- Launch `notmuch.nvim` landing page
@@ -158,7 +158,7 @@ end
 -- @usage
 -- lua require('notmuch').count('tag:inbox') -- > '999'
 nm.count = function(search)
-  local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 0)
+  local db = require'notmuch.cnotmuch'(config.options.notmuch_db_path, 0)
   local q = db.create_query(search)
   local count_threads = q.count_threads()
   db.close()
@@ -175,7 +175,7 @@ end
 -- nm.show_all_tags() -- opens the `hello` page
 nm.show_all_tags = function()
   -- Fetch all tags available in the notmuch database
-  local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 0)
+  local db = require'notmuch.cnotmuch'(config.options.notmuch_db_path, 0)
   local tags = db.get_all_tags()
   db.close()
 

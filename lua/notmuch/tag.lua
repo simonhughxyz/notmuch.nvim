@@ -2,9 +2,11 @@ local t = {}
 local v = vim.api
 local u = require'notmuch.util'
 
+local config = require('notmuch.config')
+
 t.msg_add_tag = function(tags)
   local t = u.split(tags, '%S+')
-  local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 1)
+  local db = require'notmuch.cnotmuch'(config.options.notmuch_db_path, 1)
   local id = u.find_cursor_msg_id()
   if id == nil then return end
   local msg = db.get_message(id)
@@ -17,7 +19,7 @@ end
 
 t.msg_rm_tag = function(tags)
   local t = u.split(tags, '%S+')
-  local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 1)
+  local db = require'notmuch.cnotmuch'(config.options.notmuch_db_path, 1)
   local id = u.find_cursor_msg_id()
   if id == nil then return end
   local msg = db.get_message(id)
@@ -30,7 +32,7 @@ end
 
 t.msg_toggle_tag = function(tags)
   local t = u.split(tags, '%S+')
-  local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 1)
+  local db = require'notmuch.cnotmuch'(config.options.notmuch_db_path, 1)
   local id = u.find_cursor_msg_id()
   if id == nil then return end
   local msg = db.get_message(id)
@@ -51,7 +53,7 @@ t.thread_add_tag = function(tags)
   local t = u.split(tags, '%S+')
   local line = v.nvim_get_current_line()
   local threadid = string.match(line, '%S+', 8)
-  local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 1)
+  local db = require'notmuch.cnotmuch'(config.options.notmuch_db_path, 1)
   local query = db.create_query('thread:' .. threadid)
   local thread = query.get_threads()[1]
   for i,tag in pairs(t) do
@@ -65,7 +67,7 @@ t.thread_rm_tag = function(tags)
   local t = u.split(tags, '%S+')
   local line = v.nvim_get_current_line()
   local threadid = string.match(line, '%S+', 8)
-  local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 1)
+  local db = require'notmuch.cnotmuch'(config.options.notmuch_db_path, 1)
   local query = db.create_query('thread:' .. threadid)
   local thread = query.get_threads()[1]
   for i,tag in pairs(t) do
@@ -79,7 +81,7 @@ t.thread_toggle_tag = function(tags)
   local t = u.split(tags, '%S+')
   local line = v.nvim_get_current_line()
   local threadid = string.match(line, '%S+', 8)
-  local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 1)
+  local db = require'notmuch.cnotmuch'(config.options.notmuch_db_path, 1)
   local query = db.create_query('thread:' .. threadid)
   local thread = query.get_threads()[1]
   local curr_tags = thread:get_tags()

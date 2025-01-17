@@ -2,6 +2,8 @@ local a = {}
 local u = require('notmuch.util')
 local v = vim.api
 
+local config = require('notmuch.config')
+
 local function show_github_patch(link)
   local buf = v.nvim_create_buf(true, true)
   v.nvim_buf_set_name(buf, link)
@@ -16,7 +18,7 @@ end
 -- TODO generalize this: <dontcare>/<extension part
 a.view_attachment_part = function()
   local f = a.save_attachment_part('/tmp')
-  os.execute(vim.g.NotmuchOpenCmd .. ' ' .. f)
+  os.execute(config.options.open_cmd .. ' ' .. f)
 end
 
 -- TODO generalize this: <dontcare>/<extension part
