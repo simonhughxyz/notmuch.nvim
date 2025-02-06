@@ -117,4 +117,156 @@ s.compose = function()
   end, { buffer = true })
 end
 
+s.example_mime = {
+  version = "Mime-Version: 1.0",
+  type = "multipart/mixed", -- or multipart/alternative
+  encoding = "8 bit",
+  attributes = {
+    from = "example@exmple.com",
+    to = "example@example.com",
+    subject = "This is an example",
+  },
+  mime = {{
+    type = "multipart/alternative",
+    attachment = false,
+    mime = {
+      {
+        file = "/path/to/example.txt",
+        type = "text/plain; charset=utf-8",
+      },
+      {
+        file = "/path/to/example.html",
+        type = "text/html; charset=utf-8",
+      },
+    }
+  },
+    {
+      file = "/path/to/example.pdf",
+      encoding = "base64",
+      attachment = true,
+    },
+  }
+}
+
+-- Uses the system file command to return mime type
+s.mime_type = function(filename)
+  local output = vim.fn.system({'file', '--brief', '--mime-type', filename})
+  return vim.fn.trim(output)
+end
+
+-- generates a random boundary string
+s.boundary = function(length)
+  if length > 0 then
+    return s.boundary(length - 1) .. string.char(math.random(65, 65 + 25))
+  else
+    return ""
+  end
+end
+
+-- splits a string when over a certain length
+s.split_string = function(opts)
+  local str = {}
+
+  for i=1, #opts.str, opts.length do
+    str[#str+1] = opts.str:sub(i, i + opts.length - 1)
+  end
+
+  return str
+end
+
+-- A recursive function that goes over a mime table
+-- see s.example_mime
+-- and builds a mime message from it
+s.make_mime = function(opts)
+  local mime = {}
+  if opts.mime then
+    local boundary = s.boundary(32)
+    table.insert(mime, "Content-Type: " .. opts.type .. ";")
+    table.insert(mime, " boundary=" .. boundary)
+
+    if opts.encoding then
+      table.insert(mime, "Content-Transfer-Encoding: " .. opts.encoding)
+    else
+      table.insert(mime, "Content-Transfer-Encoding: 7bit")
+    end
+
+    for key, value in pairs(opts.attributes or {}) do
+      table.insert(mime, key .. ": " .. value)
+    end
+
+    table.insert(mime, "")
+
+    for _,value in ipairs(opts.mime) do
+      table.insert(mime, "--" .. boundary)
+      for _,value2 in ipairs(s.make_mime(value) or {}) do
+        table.insert(mime, value2)
+      end
+    end
+    table.insert(mime, "--" .. boundary .. "--")
+    table.insert(mime, "")
+  else
+    if opts.type then
+      table.insert(mime, "Content-Type: " .. opts.type)
+    else
+      table.insert(mime, "Content-Type: " .. s.mime_type(opts.file))
+    end
+
+    if opts.encoding then
+      table.insert(mime, "Content-Transfer-Encoding: " .. opts.encoding)
+    else
+      table.insert(mime, "Content-Transfer-Encoding: 7bit")
+    end
+
+    local filename = ""
+    if opts.filename then
+      filename = opts.filename
+    else
+      filename = opts.file:match("^.+/(.+)$")
+    end
+
+    if opts.attachment then
+      table.insert(mime, [[Content-Disposition: attachment; filename="]] .. filename .. [["]])
+    else
+      table.insert(mime, "Content-Disposition: inline")
+    end
+
+    local file, err = io.open(opts.file, "r")
+
+    table.insert(mime, "")
+    local content = {}
+    local base64 = require("notmuch.base64")
+
+    if file ~= nil then
+      if opts.encoding == "base64" then
+        content = base64.encode(file:read("*a"))
+
+        -- RFC 2045 defines that the maximum line length for encoded base64 is 76 chars
+        local split = s.split_string({ str = content, length = 76 })
+        for _,value in ipairs(split) do
+          table.insert(mime, value)
+        end
+      else
+        for line in file:lines() do
+          table.insert(mime, line)
+        end
+      end
+    end
+
+    table.insert(mime, "")
+
+  end
+  return mime
+end
+
+-- a temporary testing function
+-- writes the final mime email to the buffer
+-- so you can see what the result looks like
+s.mime_test = function()
+  local lines = s.make_mime(s.example_mime)
+
+  local buf = v.nvim_create_buf(true, false)
+  v.nvim_win_set_buf(0, buf)
+  v.nvim_buf_set_lines(buf, 0, -1, false, lines)
+end
+
 return s
