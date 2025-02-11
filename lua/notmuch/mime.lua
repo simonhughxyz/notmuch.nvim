@@ -207,4 +207,4 @@ m.mime_test = function()
   v.nvim_buf_set_lines(buf, 0, -1, false, lines)
 end
 
-return s
+return m
