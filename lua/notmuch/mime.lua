@@ -38,7 +38,7 @@ m.get_msg_attributes = function(lines)
   local msg = {}
   for _, line in ipairs(lines) do
     if string.find(line, ":") then
-      local sep = u.split_string(line, ":")
+      local sep = u.split(line, "([^:]+)")
       attributes[sep[1]] = sep[2]
     else
       table.insert(msg, line)
@@ -179,7 +179,7 @@ m.make_mime_msg = function(mime_table)
         content = base64.encode(file:read("*a"))
 
         -- RFC 2045 defines that the maximum line length for encoded base64 is 76 chars
-        local split = u.split_string_length({ str = content, length = 76 })
+        local split = u.split_length(content, 76)
         for _,value in ipairs(split) do
           table.insert(mime, value)
         end
