@@ -15,7 +15,7 @@ m.create_mime_attachments = function (paths)
   for _, path in ipairs(paths) do
     table.insert(mimes, {
       file = path,
-      type = s.get_mime_type(path),
+      type = m.get_mime_type(path),
       attachment = true,
       encoding = "base64",
     })
@@ -101,7 +101,7 @@ end
 -- @returns out string: string of pseudo random characters
 m.get_boundary = function(length)
   if length > 0 then
-    return s.get_boundary(length - 1) .. string.char(math.random(65, 65 + 25))
+    return m.get_boundary(length - 1) .. string.char(math.random(65, 65 + 25))
   else
     return ""
   end
@@ -118,7 +118,7 @@ end
 m.make_mime_msg = function(mime_table)
   local mime = {}
   if mime_table.mime then
-    local boundary = s.get_boundary(32)
+    local boundary = m.get_boundary(32)
     table.insert(mime, "Content-Type: " .. mime_table.type .. ";")
     table.insert(mime, " boundary=" .. boundary)
 
@@ -136,7 +136,7 @@ m.make_mime_msg = function(mime_table)
 
     for _,value in ipairs(mime_table.mime) do
       table.insert(mime, "--" .. boundary)
-      for _,value2 in ipairs(s.make_mime_msg(value) or {}) do
+      for _,value2 in ipairs(m.make_mime_msg(value) or {}) do
         table.insert(mime, value2)
       end
     end
@@ -146,7 +146,7 @@ m.make_mime_msg = function(mime_table)
     if mime_table.type then
       table.insert(mime, "Content-Type: " .. mime_table.type)
     else
-      table.insert(mime, "Content-Type: " .. s.get_mime_type(mime_table.file))
+      table.insert(mime, "Content-Type: " .. m.get_mime_type(mime_table.file))
     end
 
     if mime_table.encoding then
@@ -200,7 +200,7 @@ end
 -- writes the final mime email to the buffer
 -- so you can see what the result looks like
 m.mime_test = function()
-  local lines = s.make_mime_msg(s.example_mime)
+  local lines = m.make_mime_msg(m.example_mime)
 
   local buf = v.nvim_create_buf(true, false)
   v.nvim_win_set_buf(0, buf)
