@@ -31,6 +31,25 @@ u.split = function(s, delim)
   return out
 end
 
+-- Splits a string by a given length
+--
+-- This function takes in a string and splits it into a table of strings based
+-- on some length given by the caller, and returns the result table.
+--
+-- @param s string: input string
+-- @param length integer: length integer
+--
+-- @returns out table: table of strings as split by the function given length
+u.split_length = function(s, length)
+  local out = {}
+
+  for i=1, #s, length do
+    out[#out+1] = s:sub(i, i + length - 1)
+  end
+
+  return out
+end
+
 -- Indents the header line of a message based on its depth
 --
 -- This function takes in the buffer and line number of a message header, and

@@ -163,16 +163,6 @@ s.boundary = function(length)
   end
 end
 
--- splits a string when over a certain length
-s.split_string = function(opts)
-  local str = {}
-
-  for i=1, #opts.str, opts.length do
-    str[#str+1] = opts.str:sub(i, i + opts.length - 1)
-  end
-
-  return str
-end
 
 -- A recursive function that goes over a mime table
 -- see s.example_mime
@@ -241,7 +231,7 @@ s.make_mime = function(opts)
         content = base64.encode(file:read("*a"))
 
         -- RFC 2045 defines that the maximum line length for encoded base64 is 76 chars
-        local split = s.split_string({ str = content, length = 76 })
+        local split = u.split_string({ str = content, length = 76 })
         for _,value in ipairs(split) do
           table.insert(mime, value)
         end
