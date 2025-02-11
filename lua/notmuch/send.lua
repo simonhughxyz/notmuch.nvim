@@ -1,5 +1,6 @@
 local s = {}
 local u = require('notmuch.util')
+local m = require('notmuch.mime')
 local v = vim.api
 
 local config = require('notmuch.config')
@@ -17,7 +18,7 @@ local config = require('notmuch.config')
 --   vim.keymap.set('n', '<C-c><C-c>', function()
 --     confirm_sendmail(reply_filename)
 --   end, { buffer = true })
-local confirm_sendmail = function(filename)
+local confirm_sendmail = function()
   local choice = v.nvim_call_function('confirm', {
     'Send email?',
     '&Yes\n&No',
@@ -25,9 +26,52 @@ local confirm_sendmail = function(filename)
   })
 
   if choice == 1 then
-    vim.cmd.write()
-    s.sendmail(filename)
+    return true
+  else
+    return false
   end
+end
+
+-- Builds mime msg from contents of main msg buffer and attachment buffer
+local build_mime_msg = function(buf, buf_attach, compose_filename)
+    local attach_lines = vim.api.nvim_buf_get_lines(buf_attach, 0, -1, false)
+    local main_lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+
+
+    -- capture attributes and remove from main message buffer
+    local attributes, msg = m.get_msg_attributes(main_lines)
+    v.nvim_buf_set_lines(buf, 0, -1, false, msg)
+    vim.cmd.write({bang = true})
+
+
+
+    -- get attachments and build mime table
+    local attachments = m.create_mime_attachments(attach_lines)
+    local mimes = {{
+          file = compose_filename,
+          type = "text/plain; charset=utf-8",
+    }}
+
+    for _, v in ipairs(attachments) do
+      table.insert(mimes, v)
+    end
+
+
+
+    local mime_table = {
+      version = "Mime-Version: 1.0",
+      type = "multipart/mixed", -- or multipart/alternative
+      encoding = "8 bit",
+      attributes = attributes,
+      mime = mimes,
+    }
+
+
+    local mime_msg = m.make_mime_msg(mime_table)
+    v.nvim_buf_set_lines(buf, 0, -1, false, mime_msg)
+
+
+    vim.cmd.write({bang = true})
 end
 
 -- Send a completed message
@@ -111,9 +155,25 @@ s.compose = function()
   -- Populate with header fields (date, to, subject)
   v.nvim_buf_set_lines(buf, 0, -1, false, headers)
 
+  local buf_attach = v.nvim_create_buf(true, true)
+
+  -- Keymap for showing attachment_window
+  vim.keymap.set('n', config.options.keymaps.attachment_window, function()
+    vim.api.nvim_open_win(buf_attach, true, {
+      split = 'left',
+      win = 0
+    })
+
+  end, { buffer = true })
+
   -- Keymap for sending the email
   vim.keymap.set('n', config.options.keymaps.sendmail, function()
-    confirm_sendmail(compose_filename)
+    if confirm_sendmail() then
+      build_mime_msg(buf, buf_attach, compose_filename)
+
+      s.sendmail(compose_filename)
+    end
+
   end, { buffer = true })
 end
 

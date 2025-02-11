@@ -12,6 +12,7 @@ C.defaults = function()
     open_cmd = 'xdg-open',
     keymaps = { -- This should capture all notmuch.nvim related keymappings
       sendmail = '<C-g><C-g>',
+      attachment_window = '<C-g><C-a>',
     },
   }
   return defaults
