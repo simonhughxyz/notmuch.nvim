@@ -9,7 +9,12 @@ C.defaults = function()
   local defaults = {
     notmuch_db_path = os.getenv('HOME') .. '/Mail',
     maildir_sync_cmd = 'mbsync -a',
-    open_cmd = 'xdg-open',
+    open_handler = function(attachment)
+      os.execute('xdg-open ' .. attachment.path .. ' >/dev/null 2>/dev/null')
+    end,
+    view_handler = function(attachment)
+      return vim.fn.system({"view-handler", attachment.path})
+    end,
     keymaps = { -- This should capture all notmuch.nvim related keymappings
       sendmail = '<C-g><C-g>',
       attachment_window = '<C-g><C-a>',
