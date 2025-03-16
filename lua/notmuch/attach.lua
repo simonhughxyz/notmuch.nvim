@@ -18,7 +18,8 @@ end
 -- TODO generalize this: <dontcare>/<extension part
 a.open_attachment_part = function()
   local f = a.save_attachment_part('/tmp')
-  os.execute(config.options.open_cmd .. ' ' .. f)
+  -- os.execute(config.options.open_handler .. ' ' .. f)
+  config.options.open_handler({path = f})
 end
 
 a.view_attachment_part = function()

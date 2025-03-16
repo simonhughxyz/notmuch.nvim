@@ -98,7 +98,7 @@ You can configure several global options to tailor the plugin's behavior:
 | :----------------- | :--------------------------------------: | :------------       |
 | `notmuch_db_path`  | Directory containing the `.notmuch/` dir | `$HOME/Mail`        |
 | `maildir_sync_cmd` | Bash command to run for syncing maildir  | `mbsync -a`         |
-| `open_cmd`         | Bash command for opening attachments     | `xdg-open`          |
+| `open_handler`         | Bash command for opening attachments     | `xdg-open`          |
 | `view_handler`         | Bash command for converting attachments to text to view in vim buffer     | `view-handler`          |
 | `keymaps`          | Configure any (WIP) command's keymap     | See `config.lua`[1] |
 
