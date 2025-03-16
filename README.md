@@ -32,7 +32,7 @@ the familiar Vim interface and motions.
 - 📧 **Email Browsing**: Navigate emails with Vim-like movements.
 - 🔍 **Search Your Email**: Leverage `notmuch` to search your email interactively.
 - 🔗 **Thread Viewing**: Messages are loaded with folding and threading intact.
-- 📎 **Attachment Management**: View and save attachments easily.
+- 📎 **Attachment Management**: View, open and save attachments easily.
 - ⬇️ **Offline Mail Sync**: Supports `mbsync` for efficient sync processes.
 - 🔓 **Async Search**: Large mailboxes with thousands of email? No problem.
 - 🏷️ **Tag Management**: Conveniently add, remove, or toggle email tags.
@@ -99,6 +99,7 @@ You can configure several global options to tailor the plugin's behavior:
 | `notmuch_db_path`  | Directory containing the `.notmuch/` dir | `$HOME/Mail`        |
 | `maildir_sync_cmd` | Bash command to run for syncing maildir  | `mbsync -a`         |
 | `open_cmd`         | Bash command for opening attachments     | `xdg-open`          |
+| `view_handler`         | Bash command for converting attachments to text to view in vim buffer     | `view-handler`          |
 | `keymaps`          | Configure any (WIP) command's keymap     | See `config.lua`[1] |
 
 [1]: https://github.com/yousefakbar/notmuch.nvim/blob/main/lua/notmuch/config.lua
@@ -116,6 +117,20 @@ Example in plugin manager (lazy.nvim):
         },
     },
 },
+```
+
+Example `view-handler`:  
+*make sure the `view-handler` is available in your PATH*
+
+``` sh
+#!/bin/sh
+
+case "$1" in
+  *.html ) cat "$1" | w3m -T "text/html" -dump | col ;;
+  # *.pdf ) pdftohtml "$1" - | w3m -T "text/html" -dump | col ;;
+  *.pdf ) mutool draw -F html -o - "$1" | w3m -T "text/html" -dump | col ;;
+  *) echo "Unable to convert to text!" ;;
+esac
 ```
 
 ## License
