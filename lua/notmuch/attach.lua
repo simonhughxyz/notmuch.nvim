@@ -16,9 +16,41 @@ local function show_github_patch(link)
 end
 
 -- TODO generalize this: <dontcare>/<extension part
-a.view_attachment_part = function()
+a.open_attachment_part = function()
   local f = a.save_attachment_part('/tmp')
   os.execute(config.options.open_cmd .. ' ' .. f)
+end
+
+a.view_attachment_part = function()
+  local f = a.save_attachment_part('/tmp')
+  -- local output = vim.fn.system({config.options.view_handler, f})
+  local output = config.options.view_handler({path = f})
+
+  local lines = u.split(output, "[^\r\n]+")
+
+  local buf = v.nvim_create_buf(true, true)
+
+
+  -- calculate the position to center the window
+  local width = math.floor(vim.o.columns * 0.8)
+  local height = math.floor(vim.o.lines * 0.8)
+  local col = math.floor((vim.o.columns - width) / 2)
+  local row = math.floor((vim.o.lines - height) / 2)
+
+  local win = vim.api.nvim_open_win(buf, true, {
+      border = "rounded",
+      relative = "editor",
+      style = "minimal",
+      height = height,
+      width = width,
+      row = row,
+      col = col,
+  })
+
+  v.nvim_buf_set_lines(buf, 0, -1, false, lines)
+
+  vim.api.nvim_set_option_value('modifiable', false, { buf = buf })
+  vim.keymap.set('n', 'q', function() vim.api.nvim_win_close(win, false) end, { buffer = buf })
 end
 
 -- TODO generalize this: <dontcare>/<extension part
