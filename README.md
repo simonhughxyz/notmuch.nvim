@@ -94,12 +94,12 @@ Here are the core commands within Notmuch.nvim:
 
 You can configure several global options to tailor the plugin's behavior:
 
-| Option             | Description                              | Default value       |
+| Option             | Description                              | Default       |
 | :----------------- | :--------------------------------------: | :------------       |
 | `notmuch_db_path`  | Directory containing the `.notmuch/` dir | `$HOME/Mail`        |
 | `maildir_sync_cmd` | Bash command to run for syncing maildir  | `mbsync -a`         |
-| `open_handler`         | Bash command for opening attachments     | `xdg-open`          |
-| `view_handler`         | Bash command for converting attachments to text to view in vim buffer     | `view-handler`          |
+| `open_handler`         | Callback function for opening attachments     | By default runs `xdg-open`          |
+| `view_handler`         | Callback function for converting attachments to text to view in vim buffer     | By default runs `view-handler`          |
 | `keymaps`          | Configure any (WIP) command's keymap     | See `config.lua`[1] |
 
 [1]: https://github.com/yousefakbar/notmuch.nvim/blob/main/lua/notmuch/config.lua
